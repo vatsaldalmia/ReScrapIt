@@ -20,8 +20,8 @@ app.get('/twitter', (req, res) => {
     res.send("This is twitter page")
 })
 
-app.get('/bumble', (req, res) => {
-    res.send("This is bumble page")
+app.get('/tinder', (req, res) => {
+    res.send("This is tinder page")
 })
 
 app.listen(process.env.PORT, () => {
