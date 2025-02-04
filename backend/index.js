@@ -20,6 +20,10 @@ app.get('/twitter', (req, res) => {
     res.send("This is twitter page")
 })
 
+app.get('/bumble', (req, res) => {
+    res.send("This is bumble page")
+})
+
 app.listen(process.env.PORT, () => {
     console.log(`Example app listening on port ${process.env.PORT}`)
 })
