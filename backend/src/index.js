@@ -1,28 +1,11 @@
 import express from 'express'
 import dotenv from 'dotenv'
+import connectDB from './db/index.js';
 
-dotenv.config()
-const app = express()
 
-app.get('/', (req, res) => {
-    res.send('Hello World!')
-})
-
-app.get('/home', (req, res) => {
-    res.send("This is home page")
-})
-
-app.get('/youtube', (req, res) => {
-    res.send("This is youtube page")
-})
-
-app.get('/twitter', (req, res) => {
-    res.send("This is twitter page")
-})
-
-app.get('/tinder', (req, res) => {
-    res.send("This is tinder page")
-})
+dotenv.config();
+connectDB();
+const app = express();
 
 app.listen(process.env.PORT, () => {
     console.log(`Example app listening on port ${process.env.PORT}`)
