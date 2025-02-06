@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { RecycleIcon, ArrowLeft } from 'lucide-react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
-// Reusable InputField Component
 function InputField({
   label,
   type,
@@ -43,6 +43,8 @@ function InputField({
 }
 
 function SignUpPage() {
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -86,7 +88,7 @@ const handleSubmit = async (e) => {
   if (!validateForm()) return;
 
   try {
-    const response = await axios.post("http://localhost:3000/api/auth/signup", {
+    const response = await axios.post("http://localhost:3000/auth/signup", {
       name: formData.username,
       email: formData.email,
       password: formData.password,
@@ -95,13 +97,17 @@ const handleSubmit = async (e) => {
       pan: formData.panCard,
     });
 
-    console.log("Signup successful:", response.data);
-    alert("Signup successful! Please log in.");
+    if (response.status === 201 || response.data.success) {
+      navigate("/dashboard");
+    }
+    else {
+      throw new Error(response.data.message || "Signup failed");
+    }
   } catch (error) {
     console.error("Signup error:", error.response?.data || error.message);
     alert(error.response?.data?.message || "Signup failed. Try again.");
   }
-  };
+};
 
 
   const handleChange = (e) => {

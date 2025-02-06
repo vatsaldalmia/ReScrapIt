@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Search, Plus, Send, Recycle, TrendingUp, ArrowUpRight, ArrowDownRight, Users, X, Upload, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 function App() {
+  const navigate = useNavigate();
   const [message, setMessage] = useState('');
   const [selectedChat, setSelectedChat] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -15,7 +17,7 @@ function App() {
 
   const handleLogout = () => {
     console.log('Logging out...');
-    // Add your logout logic here
+    navigate("/");
   };
 
   const [chatMessages, setChatMessages] = useState({
