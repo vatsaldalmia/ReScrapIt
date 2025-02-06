@@ -2,13 +2,13 @@ import Scrap from "../models/scrap.models.js";
 
 export const addScrap = async (req, res) => {
     try {
-        const { name, description, images } = req.body;
+        const { name, description, images , quantity} = req.body;
         const seller = req.user._id;
-        if (!name || !description || !images || images.length === 0) {
+        if (!name || !description || !images || images.length=== 0 || !quantity) {
             return res.status(400).json({ message: "All fields are required" });
         }
 
-        const newScrap = new Scrap({ name, description, images, seller });
+        const newScrap = new Scrap({ name, description, images, seller, quantity });
         await newScrap.save();
 
         res.status(201).json({ message: "Product added successfully", scrap: newScrap });
