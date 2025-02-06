@@ -1,12 +1,12 @@
-import React from 'react';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import App from './App.jsx';
 import SignUpPage from './SignUpPage.jsx';
 import './index.css';
+import Dashboard from './Dashboard.jsx';
 
-export const router = createBrowserRouter([
+const router = createBrowserRouter([
   {
     path: '/',
     element: <App />,
@@ -14,6 +14,10 @@ export const router = createBrowserRouter([
   {
     path: '/signup',
     element: <SignUpPage />,
+  },
+  {
+    path:'/dashboard',
+    element:<Dashboard />,
   },
 ]);
 
