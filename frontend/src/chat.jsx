@@ -1,9 +1,9 @@
-import Navbar from "./components/Navbar";
+import ChatNavbar from "./components/ChatNavbar";
 
-import SettingsPage from "./pages/settingpage";
+import SettingsPage from "./components/settingpage";
 
 import { Routes, Route } from "react-router-dom";
-import { useThemeStore } from "./store/useThemeStore";
+import { useThemeStore } from "./Store/ThemeStore";
 import { Toaster } from "react-hot-toast";
 
 const App = () => {
@@ -11,7 +11,7 @@ const App = () => {
 
   return (
     <div data-theme={theme}>
-      <Navbar />
+      <ChatNavbar />
 
       <Routes>
         <Route path="/settings" element={<SettingsPage />} />
