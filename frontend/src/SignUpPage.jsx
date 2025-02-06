@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { RecycleIcon, ArrowLeft } from 'lucide-react';
+import axios from 'axios';
 
 // Reusable InputField Component
 function InputField({
@@ -79,12 +80,29 @@ function SignUpPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (validateForm()) {
-      console.log('Form submitted:', formData);
-    }
+  
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  if (!validateForm()) return;
+
+  try {
+    const response = await axios.post("http://localhost:3000/api/auth/signup", {
+      name: formData.username,
+      email: formData.email,
+      password: formData.password,
+      phoneNumber: formData.phone,
+      address: formData.address,
+      pan: formData.panCard,
+    });
+
+    console.log("Signup successful:", response.data);
+    alert("Signup successful! Please log in.");
+  } catch (error) {
+    console.error("Signup error:", error.response?.data || error.message);
+    alert(error.response?.data?.message || "Signup failed. Try again.");
+  }
   };
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;

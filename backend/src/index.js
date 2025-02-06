@@ -15,7 +15,12 @@ const app = express()
 app.use(express.json());
 app.use(cookieParser());
 app.use("/api/message",messageRoutes);
-app.use(cors())
+app.use(cors(
+    {
+        origin: "*",
+        credentials: true
+    }
+))
 app.use(bodyParser.json())
 
 app.use("/auth", authRoutes)
