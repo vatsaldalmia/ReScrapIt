@@ -26,6 +26,6 @@ import User from "../models/user.models.js";
         next(); 
     } catch (error) {
         console.error("Error in authMiddleware: ", error.message);
-        res.status(500).json({ message: "Internal server error" });
+        res.status(500).json({ message: "Invalid JWT" });
     }
 };
