@@ -1,15 +1,24 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.jsx'
-import Chat from './chat.jsx'
-import { BrowserRouter } from "react-router-dom";
+import React from 'react';
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import App from './App.jsx';
+import SignUpPage from './SignUpPage.jsx';
+import './index.css';
 
-createRoot(document.getElementById("root")).render(
+export const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <App />,
+  },
+  {
+    path: '/signup',
+    element: <SignUpPage />,
+  },
+]);
+
+createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <BrowserRouter>
-      <App />
-      <Chat/>
-    </BrowserRouter>
+    <RouterProvider router={router} />
   </StrictMode>
 );
