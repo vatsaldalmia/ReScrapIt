@@ -9,7 +9,6 @@ export const createChat = async (req, res) => {
         }
         const chat = new Chat({ members: [user1, user2] });
         await chat.save();
-
         res.status(201).json(chat);
     } catch (error) {
         res.status(500).json(
