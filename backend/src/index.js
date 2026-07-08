@@ -11,6 +11,7 @@ import  scrapRoutes from './routes/scrap.routes.js';
 import chatRoutes from './routes/chat.routes.js';
 import messageRoutes from './routes/message.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
+import userRoutes from './routes/user.routes.js';
 import Message from "./models/message.models.js";
 
 dotenv.config();
@@ -32,6 +33,7 @@ app.use("/api/scrap", scrapRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/message", messageRoutes);
 app.use("/api/upload", uploadRoutes);
+app.use("/api/users", userRoutes);
 
 const server = createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
