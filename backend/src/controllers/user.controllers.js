@@ -3,7 +3,7 @@ import User from "../models/user.models.js";
 // Public seller/user profile — only non-sensitive fields.
 export const getPublicUser = async (req, res) => {
     try {
-        const user = await User.findById(req.params.id).select("name email createdAt");
+        const user = await User.findById(req.params.id).select("name email createdAt rating");
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }

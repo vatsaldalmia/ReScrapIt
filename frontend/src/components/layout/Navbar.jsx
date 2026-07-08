@@ -1,5 +1,5 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Recycle, LogOut, Search, Package, MessageSquare, LayoutDashboard } from 'lucide-react';
+import { Recycle, LogOut, Search, Package, MessageSquare, LayoutDashboard, HandCoins, ShoppingBag } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export default function Navbar() {
@@ -36,6 +36,12 @@ export default function Navbar() {
               </Link>
               <Link to="/my-listings" className={linkClass('/my-listings')}>
                 <Package className="h-4 w-4" /> My Listings
+              </Link>
+              <Link to="/offers" className={linkClass('/offers')}>
+                <HandCoins className="h-4 w-4" /> Offers
+              </Link>
+              <Link to="/orders" className={linkClass('/orders')}>
+                <ShoppingBag className="h-4 w-4" /> Orders
               </Link>
               <Link to="/dashboard" className={linkClass('/messages')}>
                 <MessageSquare className="h-4 w-4" /> Messages

@@ -10,6 +10,9 @@ import ListingDetail from './pages/ListingDetail.jsx';
 import SellerProfile from './pages/SellerProfile.jsx';
 import MyListings from './pages/MyListings.jsx';
 import ListingEditor from './pages/ListingEditor.jsx';
+import Offers from './pages/Offers.jsx';
+import Orders from './pages/Orders.jsx';
+import OrderDetail from './pages/OrderDetail.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import ProtectedRoute from './components/auth/ProtectedRoute.jsx';
 
@@ -63,6 +66,30 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <ListingEditor />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/offers',
+    element: (
+      <ProtectedRoute>
+        <Offers />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/orders',
+    element: (
+      <ProtectedRoute>
+        <Orders />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/orders/:id',
+    element: (
+      <ProtectedRoute>
+        <OrderDetail />
       </ProtectedRoute>
     ),
   },

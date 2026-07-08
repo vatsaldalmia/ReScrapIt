@@ -3,21 +3,25 @@ import { useParams } from 'react-router-dom';
 import { Store, Calendar } from 'lucide-react';
 import Navbar from '../components/layout/Navbar';
 import ListingCard from '../components/listing/ListingCard';
+import StarRating from '../components/review/StarRating';
 import { getPublicUser } from '../api/users';
 import { getSellerListings } from '../api/scrap';
+import { getSellerReviews } from '../api/reviews';
 
 export default function SellerProfile() {
   const { id } = useParams();
   const [seller, setSeller] = useState(null);
   const [listings, setListings] = useState([]);
+  const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
       try {
-        const [u, l] = await Promise.all([getPublicUser(id), getSellerListings(id)]);
+        const [u, l, r] = await Promise.all([getPublicUser(id), getSellerListings(id), getSellerReviews(id)]);
         setSeller(u.data.user);
         setListings(l.data.scraps || []);
+        setReviews(r.data.reviews || []);
       } catch {
         setSeller(null);
       } finally {
@@ -41,6 +45,7 @@ export default function SellerProfile() {
           </div>
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">{seller.name} <Store className="h-5 w-5 text-green-600" /></h1>
+            <div className="mt-1"><StarRating value={seller.rating?.average || 0} count={seller.rating?.count || 0} /></div>
             {memberSince && (
               <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
                 <Calendar className="h-4 w-4" /> Member since {memberSince}
@@ -55,6 +60,31 @@ export default function SellerProfile() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {listings.map((s) => <ListingCard key={s._id} scrap={s} />)}
+          </div>
+        )}
+
+        <h2 className="text-lg font-semibold mt-10 mb-4">Reviews ({reviews.length})</h2>
+        {reviews.length === 0 ? (
+          <p className="text-gray-500 text-sm">No reviews yet.</p>
+        ) : (
+          <div className="space-y-4 max-w-2xl">
+            {reviews.map((rev) => (
+              <div key={rev._id} className="bg-white p-4 rounded-lg border">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="font-medium text-sm">{rev.reviewer?.name || 'Buyer'}</span>
+                    {rev.listing?.name && <span className="text-xs text-gray-400"> · {rev.listing.name}</span>}
+                  </div>
+                  <StarRating value={rev.rating} size={14} />
+                </div>
+                {rev.text && <p className="text-sm text-gray-600 mt-2">{rev.text}</p>}
+                {rev.sellerResponse?.text && (
+                  <div className="mt-2 ml-4 pl-3 border-l-2 border-green-200 text-sm text-gray-600">
+                    <span className="font-medium text-green-700">Seller response:</span> {rev.sellerResponse.text}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         )}
       </div>

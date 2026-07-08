@@ -12,6 +12,9 @@ import chatRoutes from './routes/chat.routes.js';
 import messageRoutes from './routes/message.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
 import userRoutes from './routes/user.routes.js';
+import offerRoutes from './routes/offer.routes.js';
+import orderRoutes from './routes/order.routes.js';
+import reviewRoutes from './routes/review.routes.js';
 import Message from "./models/message.models.js";
 
 dotenv.config();
@@ -34,6 +37,9 @@ app.use("/api/chat", chatRoutes);
 app.use("/api/message", messageRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/offers", offerRoutes);
+app.use("/api/orders", orderRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 const server = createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });

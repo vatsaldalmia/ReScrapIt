@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { MapPin, Package, MessageSquare, ArrowLeft, Store } from 'lucide-react';
+import { MapPin, Package, MessageSquare, ArrowLeft, Store, HandCoins, X } from 'lucide-react';
 import Navbar from '../components/layout/Navbar';
+import StarRating from '../components/review/StarRating';
 import { getScrap } from '../api/scrap';
 import { createChat } from '../api/chat';
+import { createOffer } from '../api/offers';
+import { getListingReviews } from '../api/reviews';
 import { useAuth } from '../context/AuthContext';
 import { categoryLabel, formatPrice } from '../constants';
 
@@ -15,12 +18,20 @@ export default function ListingDetail() {
   const [loading, setLoading] = useState(true);
   const [activeImg, setActiveImg] = useState(0);
   const [starting, setStarting] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [showOffer, setShowOffer] = useState(false);
+  const [offer, setOffer] = useState({ offeredPrice: '', offeredQuantity: '', message: '' });
+  const [sendingOffer, setSendingOffer] = useState(false);
 
   useEffect(() => {
     (async () => {
       try {
         const { data } = await getScrap(id);
         setScrap(data.scrap);
+        try {
+          const rev = await getListingReviews(id);
+          setReviews(rev.data.reviews || []);
+        } catch { /* ignore */ }
       } catch {
         setScrap(null);
       } finally {
@@ -28,6 +39,27 @@ export default function ListingDetail() {
       }
     })();
   }, [id]);
+
+  const handleMakeOffer = async (e) => {
+    e.preventDefault();
+    if (!isAuthenticated) { navigate('/'); return; }
+    setSendingOffer(true);
+    try {
+      await createOffer({
+        listingId: scrap._id,
+        offeredPrice: Number(offer.offeredPrice),
+        offeredQuantity: Number(offer.offeredQuantity),
+        message: offer.message,
+      });
+      setShowOffer(false);
+      setOffer({ offeredPrice: '', offeredQuantity: '', message: '' });
+      alert('Offer sent! Track it under Offers.');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Could not send offer.');
+    } finally {
+      setSendingOffer(false);
+    }
+  };
 
   const handleMessageSeller = async () => {
     if (!isAuthenticated) { navigate('/'); return; }
@@ -113,19 +145,30 @@ export default function ListingDetail() {
                 </div>
                 <div>
                   <div className="font-medium text-sm">{scrap.seller?.name || 'Seller'}</div>
-                  <div className="text-xs text-gray-500 flex items-center gap-1"><Store className="h-3 w-3" /> View storefront</div>
+                  <StarRating value={scrap.seller?.rating?.average || 0} count={scrap.seller?.rating?.count || 0} size={13} />
                 </div>
+              </Link>
+              <Link to={`/seller/${scrap.seller?._id}`} className="text-xs text-gray-500 flex items-center gap-1 hover:text-green-600">
+                <Store className="h-3 w-3" /> Storefront
               </Link>
             </div>
 
             {!isOwner && (
-              <button
-                onClick={handleMessageSeller}
-                disabled={starting}
-                className="mt-4 w-full flex items-center justify-center gap-2 bg-green-600 text-white py-2.5 rounded-lg font-semibold hover:bg-green-700 disabled:opacity-60"
-              >
-                <MessageSquare className="h-5 w-5" /> {starting ? 'Starting…' : 'Message Seller'}
-              </button>
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <button
+                  onClick={handleMessageSeller}
+                  disabled={starting}
+                  className="flex items-center justify-center gap-2 border border-green-600 text-green-700 py-2.5 rounded-lg font-semibold hover:bg-green-50 disabled:opacity-60"
+                >
+                  <MessageSquare className="h-5 w-5" /> {starting ? 'Starting…' : 'Message'}
+                </button>
+                <button
+                  onClick={() => (isAuthenticated ? setShowOffer(true) : navigate('/'))}
+                  className="flex items-center justify-center gap-2 bg-green-600 text-white py-2.5 rounded-lg font-semibold hover:bg-green-700"
+                >
+                  <HandCoins className="h-5 w-5" /> Make Offer
+                </button>
+              </div>
             )}
             {isOwner && (
               <Link to={`/my-listings/${scrap._id}/edit`} className="mt-4 block text-center w-full border border-green-600 text-green-700 py-2.5 rounded-lg font-semibold hover:bg-green-50">
@@ -134,7 +177,61 @@ export default function ListingDetail() {
             )}
           </div>
         </div>
+
+        {/* Reviews */}
+        <div className="mt-10">
+          <h2 className="text-lg font-semibold mb-4">Reviews ({reviews.length})</h2>
+          {reviews.length === 0 ? (
+            <p className="text-gray-500 text-sm">No reviews for this listing yet.</p>
+          ) : (
+            <div className="space-y-4">
+              {reviews.map((rev) => (
+                <div key={rev._id} className="bg-white p-4 rounded-lg border">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-sm">{rev.reviewer?.name || 'Buyer'}</span>
+                    <StarRating value={rev.rating} size={14} />
+                  </div>
+                  {rev.text && <p className="text-sm text-gray-600 mt-2">{rev.text}</p>}
+                  {rev.sellerResponse?.text && (
+                    <div className="mt-2 ml-4 pl-3 border-l-2 border-green-200 text-sm text-gray-600">
+                      <span className="font-medium text-green-700">Seller response:</span> {rev.sellerResponse.text}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Make Offer modal */}
+      {showOffer && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-30">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Make an Offer</h2>
+              <button onClick={() => setShowOffer(false)} className="text-gray-500 hover:text-gray-700"><X className="h-5 w-5" /></button>
+            </div>
+            <form onSubmit={handleMakeOffer} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Offered price per unit (₹)</label>
+                <input type="number" step="0.01" required value={offer.offeredPrice} onChange={(e) => setOffer({ ...offer, offeredPrice: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Quantity (available: {scrap.quantity}, MOQ: {scrap.moq})</label>
+                <input type="number" step="0.01" required value={offer.offeredQuantity} onChange={(e) => setOffer({ ...offer, offeredQuantity: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Message (optional)</label>
+                <textarea rows={2} value={offer.message} onChange={(e) => setOffer({ ...offer, message: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" />
+              </div>
+              <button type="submit" disabled={sendingOffer} className="w-full bg-green-600 text-white py-2.5 rounded-lg font-semibold hover:bg-green-700 disabled:opacity-60">
+                {sendingOffer ? 'Sending…' : 'Send Offer'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
