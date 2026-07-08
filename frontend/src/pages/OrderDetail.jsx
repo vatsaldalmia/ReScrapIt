@@ -7,6 +7,7 @@ import StarRating from '../components/review/StarRating';
 import { useAuth } from '../context/AuthContext';
 import { getOrder, updateOrderStatus, payOrder, addDeliveryProof } from '../api/orders';
 import { createReview } from '../api/reviews';
+import { raiseDispute } from '../api/disputes';
 import { uploadImages } from '../api/upload';
 import { orderStatusColor, orderStatusLabel } from '../orderStatus';
 
@@ -73,6 +74,21 @@ export default function OrderDetail() {
       alert('Thanks for your review!');
     } catch (e) {
       alert(e.response?.data?.message || 'Could not submit review');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleRaiseDispute = async () => {
+    const reason = window.prompt('Briefly describe the issue (reason):');
+    if (!reason) return;
+    setBusy(true);
+    try {
+      await raiseDispute({ orderId: id, reason });
+      await load();
+      alert('Dispute raised. An admin will review it.');
+    } catch (e) {
+      alert(e.response?.data?.message || 'Could not raise dispute');
     } finally {
       setBusy(false);
     }
@@ -166,6 +182,11 @@ export default function OrderDetail() {
                 {['payment_pending', 'paid', 'pickup_scheduled'].includes(order.status) && (
                   <button disabled={busy} onClick={() => run(updateOrderStatus, id, 'cancelled')} className={`${btn} text-red-600 border border-red-200 hover:bg-red-50`}>
                     <XCircle className="h-4 w-4" /> Cancel Order
+                  </button>
+                )}
+                {['paid', 'pickup_scheduled', 'in_transit', 'delivered'].includes(order.status) && (
+                  <button disabled={busy} onClick={handleRaiseDispute} className={`${btn} text-orange-600 border border-orange-200 hover:bg-orange-50`}>
+                    <XCircle className="h-4 w-4" /> Raise Dispute
                   </button>
                 )}
                 {!['payment_pending', 'paid', 'pickup_scheduled', 'in_transit', 'delivered'].includes(order.status) &&

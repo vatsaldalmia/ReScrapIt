@@ -171,7 +171,7 @@ export const getScraps = async (req, res) => {
 
 export const getScrapById = async (req, res) => {
     try {
-        const scrap = await Scrap.findById(req.params.id).populate("seller", "name email createdAt rating");
+        const scrap = await Scrap.findById(req.params.id).populate("seller", "name email createdAt rating isVerified companyName");
         if (!scrap) {
             return res.status(404).json({ message: "Listing not found" });
         }

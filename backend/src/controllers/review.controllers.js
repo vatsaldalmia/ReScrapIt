@@ -1,6 +1,7 @@
 import Review from "../models/review.models.js";
 import Order from "../models/order.models.js";
 import User from "../models/user.models.js";
+import { notify } from "../lib/notify.js";
 
 const recomputeSellerRating = async (sellerId) => {
     const agg = await Review.aggregate([
@@ -51,6 +52,14 @@ export const createReview = async (req, res) => {
         await order.save();
 
         await recomputeSellerRating(order.seller);
+
+        await notify({
+            recipient: order.seller,
+            type: "review",
+            title: "New review received",
+            body: `${req.user.name} left you a ${rating}-star review`,
+            link: `/seller/${order.seller}`,
+        });
 
         res.status(201).json({ message: "Review submitted", review });
     } catch (error) {

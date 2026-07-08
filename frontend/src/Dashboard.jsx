@@ -5,6 +5,7 @@ import { useAuth } from './context/AuthContext';
 import useSocket from './hooks/useSocket';
 import { searchScraps } from './api/scrap';
 import { getChats, getMessages, createChat } from './api/chat';
+import { getMyAnalytics } from './api/analytics';
 import { formatPrice } from './constants';
 
 function Dashboard() {
@@ -21,6 +22,7 @@ function Dashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [analytics, setAnalytics] = useState(null);
 
   const selectedChatRef = useRef(null);
   const userId = user?._id;
@@ -85,6 +87,16 @@ function Dashboard() {
     return () => socket.off('receive_message', handleReceive);
   }, [socketRef]);
 
+  // Load real dashboard analytics.
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await getMyAnalytics();
+        setAnalytics(data.analytics);
+      } catch { /* ignore */ }
+    })();
+  }, []);
+
   const handleSendMessage = (e) => {
     e.preventDefault();
     const text = message.trim();
@@ -123,29 +135,25 @@ function Dashboard() {
     }
   };
 
-  const StatCard = ({ title, value, icon: Icon, trendValue }) => {
-    const isNegative = trendValue.includes('-');
-    return (
-      <div className="bg-gray-50 p-6 rounded-lg shadow-sm">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-lg font-medium text-gray-600">{title}</h3>
-          <Icon className="h-6 w-6 text-gray-600" />
-        </div>
-        <p className="text-3xl font-bold text-gray-900 mb-2">{value}</p>
-        <p className={`text-sm ${isNegative ? 'text-red-600' : 'text-green-600'} flex items-center`}>
-          {isNegative ? <ArrowDownRight className="h-4 w-4 mr-1" /> : <ArrowUpRight className="h-4 w-4 mr-1" />}
-          {trendValue}
-        </p>
+  const StatCard = ({ title, value, icon: Icon }) => (
+    <div className="bg-gray-50 p-6 rounded-lg shadow-sm">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-lg font-medium text-gray-600">{title}</h3>
+        <Icon className="h-6 w-6 text-green-600" />
       </div>
-    );
-  };
+      <p className="text-3xl font-bold text-gray-900">{value}</p>
+    </div>
+  );
 
-  const stats = useMemo(() => [
-    { title: 'Total Sales', value: '$128,400', icon: TrendingUp, trendValue: '+12% vs last month' },
-    { title: 'Scrap Exported', value: '245 tons', icon: ArrowUpRight, trendValue: '+8% increase' },
-    { title: 'Scrap Imported', value: '180 tons', icon: ArrowDownRight, trendValue: '-5% decrease' },
-    { title: 'Active Partners', value: '24', icon: Users, trendValue: '+3 new this month' },
-  ], []);
+  const stats = useMemo(() => {
+    if (!analytics) return [];
+    return [
+      { title: 'Revenue (as seller)', value: `₹${(analytics.revenue || 0).toLocaleString('en-IN')}`, icon: TrendingUp },
+      { title: 'Active Listings', value: analytics.activeListings ?? 0, icon: ArrowUpRight },
+      { title: 'Active Orders', value: analytics.activeOrders ?? 0, icon: ArrowDownRight },
+      { title: 'Total Spent (as buyer)', value: `₹${(analytics.spent || 0).toLocaleString('en-IN')}`, icon: Users },
+    ];
+  }, [analytics]);
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -298,8 +306,9 @@ function Dashboard() {
         ) : (
           <div className="flex-1 p-8 bg-white overflow-auto">
             <div className="grid grid-cols-2 gap-6">
-              {stats.map((s) => <StatCard key={s.title} title={s.title} value={s.value} icon={s.icon} trendValue={s.trendValue} />)}
+              {stats.map((s) => <StatCard key={s.title} title={s.title} value={s.value} icon={s.icon} />)}
             </div>
+            {!analytics && <p className="text-gray-400 mt-6">Loading your stats…</p>}
           </div>
         )}
       </div>

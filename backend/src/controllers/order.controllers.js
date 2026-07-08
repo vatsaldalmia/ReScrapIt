@@ -1,8 +1,10 @@
 import Order from "../models/order.models.js";
 import { ORDER_STATUSES } from "../models/order.models.js";
+import { notify } from "../lib/notify.js";
 
+const idOf = (ref) => (ref && ref._id ? ref._id : ref);
 const isParticipant = (order, uid) =>
-    order.buyer.toString() === uid.toString() || order.seller.toString() === uid.toString();
+    idOf(order.buyer).toString() === uid.toString() || idOf(order.seller).toString() === uid.toString();
 
 // Transitions allowed and who may perform them.
 const TRANSITIONS = {
@@ -84,6 +86,15 @@ export const updateOrderStatus = async (req, res) => {
         order.timeline.push({ status, note: note || "" });
         await order.save();
 
+        const counterparty = isSeller ? order.buyer : order.seller;
+        await notify({
+            recipient: counterparty,
+            type: "order",
+            title: `Order ${status}`,
+            body: `Order #${order._id.toString().slice(-6)} is now "${status}"`,
+            link: `/orders/${order._id}`,
+        });
+
         res.status(200).json({ message: `Order marked ${status}`, order });
     } catch (error) {
         res.status(500).json({ message: "Server error", error: error.message });
@@ -113,6 +124,14 @@ export const payOrder = async (req, res) => {
             note: razorpayConfigured ? "Paid via Razorpay" : "Simulated payment (Razorpay not configured)",
         });
         await order.save();
+
+        await notify({
+            recipient: order.seller,
+            type: "order",
+            title: "Payment received",
+            body: `Payment received for order #${order._id.toString().slice(-6)}`,
+            link: `/orders/${order._id}`,
+        });
 
         res.status(200).json({ message: "Payment successful", order });
     } catch (error) {

@@ -1,9 +1,10 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Recycle, LogOut, Search, Package, MessageSquare, LayoutDashboard, HandCoins, ShoppingBag } from 'lucide-react';
+import { Recycle, LogOut, Search, Package, MessageSquare, LayoutDashboard, HandCoins, ShoppingBag, Settings, Shield } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import NotificationBell from './NotificationBell';
 
 export default function Navbar() {
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -46,6 +47,11 @@ export default function Navbar() {
               <Link to="/dashboard" className={linkClass('/messages')}>
                 <MessageSquare className="h-4 w-4" /> Messages
               </Link>
+              {isAdmin && (
+                <Link to="/admin" className={linkClass('/admin')}>
+                  <Shield className="h-4 w-4" /> Admin
+                </Link>
+              )}
             </>
           )}
         </div>
@@ -53,6 +59,10 @@ export default function Navbar() {
         <div className="flex items-center gap-3">
           {isAuthenticated ? (
             <>
+              <NotificationBell />
+              <Link to="/settings" className="p-2 text-gray-600 hover:text-gray-900" title="Settings">
+                <Settings className="h-5 w-5" />
+              </Link>
               <span className="text-sm text-gray-600 hidden sm:inline">{user?.name}</span>
               <button
                 onClick={handleLogout}

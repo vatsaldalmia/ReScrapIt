@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { MapPin, Package, MessageSquare, ArrowLeft, Store, HandCoins, X } from 'lucide-react';
+import { MapPin, Package, MessageSquare, ArrowLeft, Store, HandCoins, X, BadgeCheck } from 'lucide-react';
 import Navbar from '../components/layout/Navbar';
 import StarRating from '../components/review/StarRating';
 import { getScrap } from '../api/scrap';
@@ -144,7 +144,10 @@ export default function ListingDetail() {
                   {(scrap.seller?.name || 'S').charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <div className="font-medium text-sm">{scrap.seller?.name || 'Seller'}</div>
+                  <div className="font-medium text-sm flex items-center gap-1">
+                    {scrap.seller?.name || 'Seller'}
+                    {scrap.seller?.isVerified && <BadgeCheck className="h-4 w-4 text-green-600" title="Verified business" />}
+                  </div>
                   <StarRating value={scrap.seller?.rating?.average || 0} count={scrap.seller?.rating?.count || 0} size={13} />
                 </div>
               </Link>

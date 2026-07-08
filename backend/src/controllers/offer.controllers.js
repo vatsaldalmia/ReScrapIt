@@ -1,6 +1,7 @@
 import Offer from "../models/offer.models.js";
 import Order from "../models/order.models.js";
 import Scrap from "../models/scrap.models.js";
+import { notify } from "../lib/notify.js";
 
 // Buyer creates an offer / quote request on a listing.
 export const createOffer = async (req, res) => {
@@ -23,6 +24,14 @@ export const createOffer = async (req, res) => {
             offeredPrice,
             offeredQuantity,
             message: message || "",
+        });
+
+        await notify({
+            recipient: listing.seller,
+            type: "offer",
+            title: "New offer received",
+            body: `${req.user.name} offered ₹${offeredPrice}/unit for ${listing.name}`,
+            link: "/offers",
         });
 
         res.status(201).json({ message: "Offer sent", offer });
@@ -71,6 +80,15 @@ export const respondOffer = async (req, res) => {
         }
 
         await offer.save();
+
+        await notify({
+            recipient: offer.buyer,
+            type: "offer",
+            title: `Offer ${offer.status}`,
+            body: `The seller ${offer.status} your offer`,
+            link: "/offers",
+        });
+
         res.status(200).json({ message: `Offer ${offer.status}`, offer });
     } catch (error) {
         res.status(500).json({ message: "Server error", error: error.message });
@@ -110,6 +128,14 @@ export const confirmOffer = async (req, res) => {
         offer.status = "confirmed";
         offer.order = order._id;
         await offer.save();
+
+        await notify({
+            recipient: offer.seller,
+            type: "order",
+            title: "New order placed",
+            body: `${req.user.name} confirmed an order worth ₹${total}`,
+            link: `/orders/${order._id}`,
+        });
 
         res.status(201).json({ message: "Order created", order });
     } catch (error) {

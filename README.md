@@ -4,10 +4,11 @@ A B2B marketplace connecting businesses that sell industrial waste/scrap with
 businesses that can use it as raw material. See `MASTER_PROMPT.md` (project brief)
 for the full product vision and roadmap.
 
-This repository implements **Phases 0–2** of the roadmap: foundation fixes, the
-core marketplace (listings, browse, seller storefronts), and orders & trust
-(offers, order lifecycle, reviews & ratings) — a working end-to-end B2B flow
-from listing to review.
+This repository implements **Phases 0–3** of the roadmap: foundation fixes, the
+core marketplace (listings, browse, seller storefronts), orders & trust (offers,
+order lifecycle, reviews & ratings), and B2B polish (roles, KYC/company profiles,
+in-app notifications, disputes, an admin panel, and real analytics) — a working
+end-to-end B2B platform.
 
 ## Monorepo layout
 
@@ -42,6 +43,7 @@ Backend environment variables (`backend/.env`):
 | `JWT_SECRET_KEY` | yes | Secret used to sign JWTs |
 | `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` | no | If set, listing images are uploaded to Cloudinary; otherwise base64 is stored (dev fallback) |
 | `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` | no | If set, payments use Razorpay; otherwise the payment step is simulated (dev fallback) |
+| `ADMIN_EMAILS` | no | Comma-separated admin emails (bootstraps platform admins) |
 | `SEMANTIC_SEARCH_URL` | no | Base URL of the optional external semantic-search service |
 
 ### Frontend
@@ -55,24 +57,33 @@ npm run dev
 
 The frontend reads the API base URL from `import.meta.env.VITE_API_URL`.
 
-## What works (Phase 0 + 1 + 2)
+## What works (Phase 0 + 1 + 2 + 3)
 
-- **Auth:** signup returns a JWT and auto-logs the user in; login returns a JWT +
-  the full user object; `/auth/profile` is protected.
+- **Auth & roles:** signup auto-login; JWT login; buyer/seller/dual/admin roles;
+  banned accounts are blocked at the middleware.
 - **Protected routes:** private pages require authentication (`ProtectedRoute` +
-  `AuthContext`); a centralized Axios client attaches the `Authorization` header.
+  `AuthContext`); admin pages require `AdminRoute`; a centralized Axios client
+  attaches the `Authorization` header.
+- **Company & KYC:** editable company profile (name, GST, bio); KYC document
+  upload; admin approval grants a verified badge.
 - **Listings:** full CRUD with price, unit, category, location, status, MOQ,
   specifications and images (Cloudinary or base64 fallback).
 - **Browse & discovery:** paginated browse with category/city/price filters and
-  sorting; listing detail; seller storefronts.
+  sorting; listing detail; seller storefronts with verified badges + ratings.
 - **Chat:** real-time 1:1 messaging over Socket.IO, backed by REST history.
 - **Offers:** buyers send offers; sellers accept / reject / counter; buyers
   confirm to create an order.
 - **Orders:** full lifecycle (payment → pickup → in transit → delivered →
-  completed) with a status timeline, delivery-proof upload and a payment step
-  (Razorpay when configured, simulated otherwise).
+  completed) with a status timeline, delivery-proof upload, disputes and a
+  payment step (Razorpay when configured, simulated otherwise).
 - **Reviews & ratings:** buyers review completed orders; sellers respond;
   aggregate star ratings are cached on the seller and shown on cards/profiles.
+- **Notifications:** in-app notifications on offers, orders, reviews, disputes
+  and KYC, with an unread badge in the navbar.
+- **Admin panel:** platform analytics (GMV, users, listings, orders, disputes),
+  user verification/banning, listing/order oversight, and dispute resolution.
+- **Analytics:** the dashboard shows real per-user revenue, spend, active
+  listings and active orders.
 
 ## API overview
 
@@ -117,6 +128,30 @@ The frontend reads the API base URL from `import.meta.env.VITE_API_URL`.
 | GET | `/api/reviews/seller/:sellerId` | – | Reviews for a seller |
 | GET | `/api/reviews/listing/:listingId` | – | Reviews for a listing |
 | PUT | `/api/reviews/:id/respond` | ✓ | Seller responds |
+
+### Profile, notifications, disputes & admin
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| PUT | `/auth/profile` | ✓ | Update profile / company fields |
+| POST | `/auth/kyc` | ✓ | Upload a KYC document |
+| GET | `/api/notifications` | ✓ | List notifications + unread count |
+| PUT | `/api/notifications/:id/read` | ✓ | Mark one read |
+| PUT | `/api/notifications/read-all` | ✓ | Mark all read |
+| POST | `/api/disputes` | ✓ | Raise a dispute on an order |
+| GET | `/api/disputes/mine` | ✓ | My disputes |
+| GET | `/api/analytics/me` | ✓ | Personal dashboard stats |
+| GET | `/api/admin/users` | admin | List users |
+| PUT | `/api/admin/users/:id/verify` | admin | Approve KYC |
+| PUT | `/api/admin/users/:id/ban` | admin | Ban / unban a user |
+| GET | `/api/admin/listings` | admin | All listings |
+| GET | `/api/admin/orders` | admin | All orders |
+| GET | `/api/admin/disputes` | admin | All disputes |
+| PUT | `/api/admin/disputes/:id/resolve` | admin | Resolve a dispute |
+| GET | `/api/admin/analytics` | admin | Platform stats (GMV, counts) |
+
+> **Becoming an admin:** add your email to `ADMIN_EMAILS` in `backend/.env`
+> (comma-separated) or set a user's `role` to `admin` directly in MongoDB. The
+> `/admin` panel then becomes available in the navbar.
 
 ### Chat & upload
 | Method | Path | Auth | Description |

@@ -66,3 +66,42 @@ export const getProfile = async (req, res) => {
         res.status(500).json({ message: "Server error", error: error.message });
     }
 };
+
+// Update editable profile / company fields (Protected)
+export const updateProfile = async (req, res) => {
+    try {
+        const editable = ["name", "phoneNumber", "address", "companyName", "gst", "logo", "bio", "role"];
+        const user = await User.findById(req.user._id);
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        for (const key of editable) {
+            if (req.body[key] !== undefined) {
+                // Never allow self-promotion to admin via profile update.
+                if (key === "role" && req.body.role === "admin") continue;
+                if (key === "role" && !["buyer", "seller", "dual"].includes(req.body.role)) continue;
+                user[key] = req.body[key];
+            }
+        }
+        await user.save();
+        res.json(sanitizeUser(user));
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+// Add a KYC document (Protected). Resets verification to pending review.
+export const uploadKyc = async (req, res) => {
+    try {
+        const { type, url } = req.body;
+        if (!url) return res.status(400).json({ message: "Document url is required" });
+
+        const user = await User.findById(req.user._id);
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        user.kycDocuments.push({ type: type || "other", url, status: "pending" });
+        await user.save();
+        res.status(201).json(sanitizeUser(user));
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};

@@ -15,6 +15,10 @@ import userRoutes from './routes/user.routes.js';
 import offerRoutes from './routes/offer.routes.js';
 import orderRoutes from './routes/order.routes.js';
 import reviewRoutes from './routes/review.routes.js';
+import notificationRoutes from './routes/notification.routes.js';
+import disputeRoutes from './routes/dispute.routes.js';
+import adminRoutes from './routes/admin.routes.js';
+import analyticsRoutes from './routes/analytics.routes.js';
 import Message from "./models/message.models.js";
 
 dotenv.config();
@@ -40,6 +44,10 @@ app.use("/api/users", userRoutes);
 app.use("/api/offers", offerRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/reviews", reviewRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/disputes", disputeRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
 const server = createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });

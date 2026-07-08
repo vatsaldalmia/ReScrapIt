@@ -13,8 +13,12 @@ import ListingEditor from './pages/ListingEditor.jsx';
 import Offers from './pages/Offers.jsx';
 import Orders from './pages/Orders.jsx';
 import OrderDetail from './pages/OrderDetail.jsx';
+import Settings from './pages/Settings.jsx';
+import Notifications from './pages/Notifications.jsx';
+import AdminPanel from './pages/AdminPanel.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import ProtectedRoute from './components/auth/ProtectedRoute.jsx';
+import AdminRoute from './components/auth/AdminRoute.jsx';
 
 const router = createBrowserRouter([
   {
@@ -91,6 +95,30 @@ const router = createBrowserRouter([
       <ProtectedRoute>
         <OrderDetail />
       </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/settings',
+    element: (
+      <ProtectedRoute>
+        <Settings />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/notifications',
+    element: (
+      <ProtectedRoute>
+        <Notifications />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin',
+    element: (
+      <AdminRoute>
+        <AdminPanel />
+      </AdminRoute>
     ),
   },
 ]);

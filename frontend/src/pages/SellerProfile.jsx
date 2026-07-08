@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Store, Calendar } from 'lucide-react';
+import { Store, Calendar, BadgeCheck } from 'lucide-react';
 import Navbar from '../components/layout/Navbar';
 import ListingCard from '../components/listing/ListingCard';
 import StarRating from '../components/review/StarRating';
@@ -44,7 +44,12 @@ export default function SellerProfile() {
             {seller.name?.charAt(0).toUpperCase()}
           </div>
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">{seller.name} <Store className="h-5 w-5 text-green-600" /></h1>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              {seller.name}
+              <Store className="h-5 w-5 text-green-600" />
+              {seller.isVerified && <span className="flex items-center gap-1 text-sm text-green-700 bg-green-50 px-2 py-0.5 rounded-full"><BadgeCheck className="h-4 w-4" /> Verified</span>}
+            </h1>
+            {seller.companyName && <p className="text-sm text-gray-600">{seller.companyName}</p>}
             <div className="mt-1"><StarRating value={seller.rating?.average || 0} count={seller.rating?.count || 0} /></div>
             {memberSince && (
               <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
