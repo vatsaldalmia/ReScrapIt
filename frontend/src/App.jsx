@@ -8,11 +8,13 @@ import {
   X
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { login as loginRequest } from './api/auth';
+import { useAuth } from './context/AuthContext';
 
 
 function AuthModal({ isOpen, onClose, type }) {
   const navigate = useNavigate(); // Get navigate function from react-router-dom
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -26,12 +28,9 @@ function AuthModal({ isOpen, onClose, type }) {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:3000/auth/login', { email, password });
-      if (response.status === 200) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-        navigate('/dashboard');
-      }
+      const response = await loginRequest({ email, password });
+      login(response.data.token, response.data.user);
+      navigate('/dashboard');
     } catch (error) {
       alert(error.response?.data?.message || 'Login failed. Please try again.');
     }
