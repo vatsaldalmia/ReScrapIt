@@ -5,7 +5,7 @@ import Navbar from '../components/layout/Navbar';
 import OrderTimeline from '../components/order/OrderTimeline';
 import StarRating from '../components/review/StarRating';
 import { useAuth } from '../context/AuthContext';
-import { getOrder, updateOrderStatus, payOrder, addDeliveryProof } from '../api/orders';
+import { getOrder, updateOrderStatus, payOrder, addDeliveryProof, getInvoice, refundOrder, verifyWeight } from '../api/orders';
 import { createReview } from '../api/reviews';
 import { raiseDispute } from '../api/disputes';
 import { uploadImages } from '../api/upload';
@@ -19,6 +19,7 @@ export default function OrderDetail() {
   const [busy, setBusy] = useState(false);
   const [rating, setRating] = useState(5);
   const [reviewText, setReviewText] = useState('');
+  const [reviewImages, setReviewImages] = useState([]);
 
   const load = async () => {
     try {
@@ -68,8 +69,14 @@ export default function OrderDetail() {
   const submitReview = async () => {
     setBusy(true);
     try {
-      await createReview({ orderId: id, rating, text: reviewText });
+      let images = [];
+      if (reviewImages.length > 0) {
+        const { data } = await uploadImages(reviewImages);
+        images = data.urls || reviewImages;
+      }
+      await createReview({ orderId: id, rating, text: reviewText, images });
       setReviewText('');
+      setReviewImages([]);
       await load();
       alert('Thanks for your review!');
     } catch (e) {
@@ -77,6 +84,14 @@ export default function OrderDetail() {
     } finally {
       setBusy(false);
     }
+  };
+
+  const handleReviewImages = (e) => {
+    Array.from(e.target.files).forEach((f) => {
+      const reader = new FileReader();
+      reader.onloadend = () => setReviewImages((prev) => [...prev, reader.result]);
+      reader.readAsDataURL(f);
+    });
   };
 
   const handleRaiseDispute = async () => {
@@ -92,6 +107,27 @@ export default function OrderDetail() {
     } finally {
       setBusy(false);
     }
+  };
+
+  const downloadInvoice = async () => {
+    try {
+      const { data } = await getInvoice(id);
+      const w = window.open();
+      if (w) w.document.write(`<iframe src="${data.invoiceUrl}" style="border:0;width:100%;height:100%"></iframe>`);
+    } catch {
+      alert('Could not generate invoice.');
+    }
+  };
+
+  const recordWeight = async () => {
+    const w = window.prompt('Actual weighed quantity at pickup:');
+    if (w === null || w === '') return;
+    await run(verifyWeight, id, Number(w));
+  };
+
+  const doRefund = async () => {
+    if (!window.confirm('Refund this order to the buyer?')) return;
+    await run(refundOrder, id);
   };
 
   if (loading) return (<div className="min-h-screen bg-gray-50"><Navbar /><p className="p-6 text-gray-500">Loading…</p></div>);
@@ -132,13 +168,22 @@ export default function OrderDetail() {
                 <div>Buyer: {order.buyer?.name}</div>
                 <div>Seller: {order.seller?.name}</div>
                 {order.paymentId && <div>Payment ref: {order.paymentId}</div>}
+                {order.escrowStatus && order.escrowStatus !== 'none' && <div>Escrow: <span className="font-medium">{order.escrowStatus}</span></div>}
+                {order.platformFee ? <div>Platform fee: ₹{order.platformFee}</div> : null}
+                {order.actualWeight !== undefined && order.actualWeight !== null && <div>Weighed at pickup: {order.actualWeight}</div>}
               </div>
 
-              {order.deliveryProof?.length > 0 && (
+              {(order.deliveryProof?.length > 0 || order.signature) && (
                 <div className="mt-4">
                   <h3 className="text-sm font-semibold mb-2">Delivery proof</h3>
                   <div className="flex gap-2 flex-wrap">
                     {order.deliveryProof.map((img, i) => <img key={i} src={img} alt={`proof ${i}`} className="h-16 w-16 object-cover rounded-lg border" />)}
+                    {order.signature && (
+                      <div className="text-center">
+                        <img src={order.signature} alt="signature" className="h-16 w-24 object-contain rounded-lg border bg-white" />
+                        <div className="text-[10px] text-gray-400">signature</div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -189,6 +234,15 @@ export default function OrderDetail() {
                     <XCircle className="h-4 w-4" /> Raise Dispute
                   </button>
                 )}
+                {isSeller && order.status === 'pickup_scheduled' && (
+                  <button disabled={busy} onClick={recordWeight} className={`${btn} border hover:bg-gray-50`}>Record Weight</button>
+                )}
+                {(isSeller || isBuyer) && order.paymentId && (
+                  <button onClick={downloadInvoice} className={`${btn} border hover:bg-gray-50`}>Download Invoice</button>
+                )}
+                {isSeller && order.escrowStatus === 'held' && (
+                  <button disabled={busy} onClick={doRefund} className={`${btn} text-red-600 border border-red-200 hover:bg-red-50`}>Refund Buyer</button>
+                )}
                 {!['payment_pending', 'paid', 'pickup_scheduled', 'in_transit', 'delivered'].includes(order.status) &&
                   !(isBuyer && order.status === 'completed' && !order.reviewed) && (
                     <p className="text-sm text-gray-500">No actions available for this order.</p>
@@ -207,6 +261,13 @@ export default function OrderDetail() {
                     rows={3}
                     className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                   />
+                  <div className="mt-2 flex items-center gap-3">
+                    <label className="text-sm text-green-700 border border-green-200 px-3 py-1.5 rounded-lg cursor-pointer hover:bg-green-50">
+                      Add photos
+                      <input type="file" className="sr-only" accept="image/*" multiple onChange={handleReviewImages} />
+                    </label>
+                    {reviewImages.map((img, i) => <img key={i} src={img} alt={`review ${i}`} className="h-10 w-10 object-cover rounded border" />)}
+                  </div>
                   <button disabled={busy} onClick={submitReview} className="mt-2 bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700">
                     Submit Review
                   </button>

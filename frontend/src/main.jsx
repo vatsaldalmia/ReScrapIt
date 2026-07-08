@@ -16,6 +16,13 @@ import OrderDetail from './pages/OrderDetail.jsx';
 import Settings from './pages/Settings.jsx';
 import Notifications from './pages/Notifications.jsx';
 import AdminPanel from './pages/AdminPanel.jsx';
+import Login from './pages/Login.jsx';
+import ForgotPassword from './pages/ForgotPassword.jsx';
+import ResetPassword from './pages/ResetPassword.jsx';
+import VerifyEmail from './pages/VerifyEmail.jsx';
+import Cart from './pages/Cart.jsx';
+import Wishlist from './pages/Wishlist.jsx';
+import Transactions from './pages/Transactions.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import ProtectedRoute from './components/auth/ProtectedRoute.jsx';
 import AdminRoute from './components/auth/AdminRoute.jsx';
@@ -28,6 +35,22 @@ const router = createBrowserRouter([
   {
     path: '/signup',
     element: <SignUpPage />,
+  },
+  {
+    path: '/login',
+    element: <Login />,
+  },
+  {
+    path: '/forgot-password',
+    element: <ForgotPassword />,
+  },
+  {
+    path: '/reset-password',
+    element: <ResetPassword />,
+  },
+  {
+    path: '/verify-email',
+    element: <VerifyEmail />,
   },
   {
     path: '/browse',
@@ -119,6 +142,30 @@ const router = createBrowserRouter([
       <AdminRoute>
         <AdminPanel />
       </AdminRoute>
+    ),
+  },
+  {
+    path: '/cart',
+    element: (
+      <ProtectedRoute>
+        <Cart />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/wishlist',
+    element: (
+      <ProtectedRoute>
+        <Wishlist />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/transactions',
+    element: (
+      <ProtectedRoute>
+        <Transactions />
+      </ProtectedRoute>
     ),
   },
 ]);

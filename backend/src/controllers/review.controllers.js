@@ -72,7 +72,7 @@ export const createReview = async (req, res) => {
 
 export const getSellerReviews = async (req, res) => {
     try {
-        const reviews = await Review.find({ seller: req.params.sellerId })
+        const reviews = await Review.find({ seller: req.params.sellerId, hidden: { $ne: true } })
             .populate("reviewer", "name")
             .populate("listing", "name")
             .sort({ createdAt: -1 });
@@ -84,10 +84,31 @@ export const getSellerReviews = async (req, res) => {
 
 export const getListingReviews = async (req, res) => {
     try {
-        const reviews = await Review.find({ listing: req.params.listingId })
+        const reviews = await Review.find({ listing: req.params.listingId, hidden: { $ne: true } })
             .populate("reviewer", "name")
             .sort({ createdAt: -1 });
         res.status(200).json({ reviews });
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+// Toggle a "helpful" vote on a review.
+export const toggleHelpful = async (req, res) => {
+    try {
+        const review = await Review.findById(req.params.id);
+        if (!review) return res.status(404).json({ message: "Review not found" });
+
+        const uid = req.user._id.toString();
+        const already = review.helpfulVoters.some((v) => v.toString() === uid);
+        if (already) {
+            review.helpfulVoters = review.helpfulVoters.filter((v) => v.toString() !== uid);
+        } else {
+            review.helpfulVoters.push(req.user._id);
+        }
+        review.helpful = review.helpfulVoters.length;
+        await review.save();
+        res.status(200).json({ helpful: review.helpful, voted: !already });
     } catch (error) {
         res.status(500).json({ message: "Server error", error: error.message });
     }

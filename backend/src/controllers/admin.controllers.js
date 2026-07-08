@@ -2,6 +2,8 @@ import User from "../models/user.models.js";
 import Scrap from "../models/scrap.models.js";
 import Order from "../models/order.models.js";
 import Dispute from "../models/dispute.models.js";
+import Review from "../models/review.models.js";
+import Report from "../models/report.models.js";
 import { notify } from "../lib/notify.js";
 
 export const listUsers = async (req, res) => {
@@ -112,6 +114,93 @@ export const resolveDispute = async (req, res) => {
         }
 
         res.status(200).json({ message: "Dispute updated", dispute });
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+// Moderate a listing: approve/reject and/or feature it.
+export const moderateListing = async (req, res) => {
+    try {
+        const { moderationStatus, featured } = req.body;
+        const listing = await Scrap.findById(req.params.id);
+        if (!listing) return res.status(404).json({ message: "Listing not found" });
+
+        if (moderationStatus !== undefined) {
+            if (!["approved", "pending", "rejected"].includes(moderationStatus)) {
+                return res.status(400).json({ message: "Invalid moderationStatus" });
+            }
+            listing.moderationStatus = moderationStatus;
+        }
+        if (featured !== undefined) listing.featured = !!featured;
+        await listing.save();
+
+        await notify({
+            recipient: listing.seller,
+            type: "system",
+            title: "Listing update",
+            body: `An admin updated your listing "${listing.name}"`,
+            link: `/listing/${listing._id}`,
+        });
+
+        res.status(200).json({ message: "Listing updated", listing });
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+// Hide / unhide a review (moderation).
+export const moderateReview = async (req, res) => {
+    try {
+        const { hidden } = req.body;
+        const review = await Review.findById(req.params.id);
+        if (!review) return res.status(404).json({ message: "Review not found" });
+        review.hidden = !!hidden;
+        await review.save();
+        res.status(200).json({ message: hidden ? "Review hidden" : "Review restored", review });
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+export const listReports = async (req, res) => {
+    try {
+        const reports = await Report.find()
+            .populate("reporter", "name email")
+            .sort({ createdAt: -1 });
+        res.status(200).json({ reports });
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+// Resolve a report, optionally taking an action on the target.
+export const resolveReport = async (req, res) => {
+    try {
+        const { status, action } = req.body; // action: hide_review | reject_listing | ban_user | none
+        const report = await Report.findById(req.params.id);
+        if (!report) return res.status(404).json({ message: "Report not found" });
+
+        if (status) {
+            if (!["open", "reviewed", "actioned", "dismissed"].includes(status)) {
+                return res.status(400).json({ message: "Invalid status" });
+            }
+            report.status = status;
+        }
+
+        if (action === "hide_review" && report.targetType === "review") {
+            await Review.findByIdAndUpdate(report.targetId, { hidden: true });
+            report.status = "actioned";
+        } else if (action === "reject_listing" && report.targetType === "listing") {
+            await Scrap.findByIdAndUpdate(report.targetId, { moderationStatus: "rejected", status: "paused" });
+            report.status = "actioned";
+        } else if (action === "ban_user" && report.targetType === "user") {
+            await User.findByIdAndUpdate(report.targetId, { banned: true });
+            report.status = "actioned";
+        }
+
+        await report.save();
+        res.status(200).json({ message: "Report updated", report });
     } catch (error) {
         res.status(500).json({ message: "Server error", error: error.message });
     }

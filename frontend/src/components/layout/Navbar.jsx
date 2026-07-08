@@ -1,5 +1,5 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Recycle, LogOut, Search, Package, MessageSquare, LayoutDashboard, HandCoins, ShoppingBag, Settings, Shield } from 'lucide-react';
+import { Recycle, LogOut, Search, Package, MessageSquare, LayoutDashboard, HandCoins, ShoppingBag, Settings, Shield, ShoppingCart, Heart } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import NotificationBell from './NotificationBell';
 
@@ -59,6 +59,8 @@ export default function Navbar() {
         <div className="flex items-center gap-3">
           {isAuthenticated ? (
             <>
+              <Link to="/wishlist" className="p-2 text-gray-600 hover:text-red-500" title="Wishlist"><Heart className="h-5 w-5" /></Link>
+              <Link to="/cart" className="p-2 text-gray-600 hover:text-green-600" title="Cart"><ShoppingCart className="h-5 w-5" /></Link>
               <NotificationBell />
               <Link to="/settings" className="p-2 text-gray-600 hover:text-gray-900" title="Settings">
                 <Settings className="h-5 w-5" />

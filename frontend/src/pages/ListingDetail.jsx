@@ -6,7 +6,10 @@ import StarRating from '../components/review/StarRating';
 import { getScrap } from '../api/scrap';
 import { createChat } from '../api/chat';
 import { createOffer } from '../api/offers';
-import { getListingReviews } from '../api/reviews';
+import { getListingReviews, toggleHelpful, respondReview } from '../api/reviews';
+import { toggleWishlist } from '../api/wishlist';
+import { addToCart } from '../api/cart';
+import { createReport } from '../api/reports';
 import { useAuth } from '../context/AuthContext';
 import { categoryLabel, formatPrice } from '../constants';
 
@@ -59,6 +62,36 @@ export default function ListingDetail() {
     } finally {
       setSendingOffer(false);
     }
+  };
+
+  const reportListing = async () => {
+    const reason = window.prompt('Why are you reporting this listing?');
+    if (!reason) return;
+    try { await createReport('listing', scrap._id, reason); alert('Report submitted.'); }
+    catch { alert('Could not submit report.'); }
+  };
+
+  const voteHelpful = async (reviewId) => {
+    try {
+      const { data } = await toggleHelpful(reviewId);
+      setReviews((prev) => prev.map((r) => (r._id === reviewId ? { ...r, helpful: data.helpful } : r)));
+    } catch { /* ignore */ }
+  };
+
+  const reportReview = async (reviewId) => {
+    const reason = window.prompt('Why are you reporting this review?');
+    if (!reason) return;
+    try { await createReport('review', reviewId, reason); alert('Report submitted.'); }
+    catch { alert('Could not submit report.'); }
+  };
+
+  const respondToReview = async (reviewId) => {
+    const text = window.prompt('Your response to this review:');
+    if (!text) return;
+    try {
+      await respondReview(reviewId, text);
+      setReviews((prev) => prev.map((r) => (r._id === reviewId ? { ...r, sellerResponse: { text } } : r)));
+    } catch { alert('Could not respond.'); }
   };
 
   const handleMessageSeller = async () => {
@@ -173,6 +206,13 @@ export default function ListingDetail() {
                 </button>
               </div>
             )}
+            {isAuthenticated && !isOwner && (
+              <div className="mt-3 flex items-center gap-4 text-sm">
+                <button onClick={async () => { try { await toggleWishlist(scrap._id); alert('Wishlist updated'); } catch { /* ignore */ } }} className="text-gray-600 hover:text-red-500">♡ Wishlist</button>
+                <button onClick={async () => { try { await addToCart(scrap._id, scrap.moq || 1); alert('Added to cart'); } catch { /* ignore */ } }} className="text-gray-600 hover:text-green-600">🛒 Add to cart</button>
+                <button onClick={reportListing} className="text-gray-400 hover:text-red-500 ml-auto">Report</button>
+              </div>
+            )}
             {isOwner && (
               <Link to={`/my-listings/${scrap._id}/edit`} className="mt-4 block text-center w-full border border-green-600 text-green-700 py-2.5 rounded-lg font-semibold hover:bg-green-50">
                 Edit your listing
@@ -195,11 +235,21 @@ export default function ListingDetail() {
                     <StarRating value={rev.rating} size={14} />
                   </div>
                   {rev.text && <p className="text-sm text-gray-600 mt-2">{rev.text}</p>}
+                  {rev.images?.length > 0 && (
+                    <div className="flex gap-2 mt-2">
+                      {rev.images.map((img, i) => <img key={i} src={img} alt={`review ${i}`} className="h-16 w-16 object-cover rounded-lg border" />)}
+                    </div>
+                  )}
                   {rev.sellerResponse?.text && (
                     <div className="mt-2 ml-4 pl-3 border-l-2 border-green-200 text-sm text-gray-600">
                       <span className="font-medium text-green-700">Seller response:</span> {rev.sellerResponse.text}
                     </div>
                   )}
+                  <div className="mt-3 flex items-center gap-4 text-xs text-gray-500">
+                    {isAuthenticated && <button onClick={() => voteHelpful(rev._id)} className="hover:text-green-600">👍 Helpful ({rev.helpful || 0})</button>}
+                    {isOwner && !rev.sellerResponse?.text && <button onClick={() => respondToReview(rev._id)} className="hover:text-green-600">Respond</button>}
+                    {isAuthenticated && <button onClick={() => reportReview(rev._id)} className="hover:text-red-500 ml-auto">Report</button>}
+                  </div>
                 </div>
               ))}
             </div>

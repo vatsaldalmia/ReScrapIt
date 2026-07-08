@@ -12,5 +12,12 @@ export const updateOrderStatus = (id, status, note) =>
 export const payOrder = (id, paymentId) =>
   client.post(`/api/orders/${id}/pay`, { paymentId });
 
-export const addDeliveryProof = (id, images) =>
-  client.post(`/api/orders/${id}/delivery-proof`, { images });
+export const addDeliveryProof = (id, images, signature) =>
+  client.post(`/api/orders/${id}/delivery-proof`, { images, signature });
+
+export const createPayment = (id) => client.post(`/api/orders/${id}/pay/create`);
+export const verifyPayment = (id, payload) => client.post(`/api/orders/${id}/pay/verify`, payload);
+export const refundOrder = (id) => client.post(`/api/orders/${id}/refund`);
+export const verifyWeight = (id, actualWeight) => client.post(`/api/orders/${id}/weight`, { actualWeight });
+export const getInvoice = (id) => client.get(`/api/orders/${id}/invoice`);
+export const getTransactions = () => client.get('/api/orders/transactions');

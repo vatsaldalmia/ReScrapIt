@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Search, Plus, Send, Recycle, TrendingUp, ArrowUpRight, ArrowDownRight, Users, X, MessageSquare, Package, LogOut } from 'lucide-react';
+import { Search, Plus, Send, Recycle, TrendingUp, ArrowUpRight, ArrowDownRight, Users, X, MessageSquare, Package, LogOut, Paperclip, Ban } from 'lucide-react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import useSocket from './hooks/useSocket';
 import { searchScraps } from './api/scrap';
-import { getChats, getMessages, createChat } from './api/chat';
+import { getChats, getMessages, createChat, markSeen, blockUser } from './api/chat';
 import { getMyAnalytics } from './api/analytics';
 import { formatPrice } from './constants';
 
@@ -47,6 +47,32 @@ function Dashboard() {
       setMessages([]);
     }
     socketRef.current?.emit('join_chat', chat._id);
+    socketRef.current?.emit('mark_seen', { chatId: chat._id, reader: userId });
+    markSeen(chat._id).catch(() => {});
+    setChats((prev) => prev.map((c) => (c._id === chat._id ? { ...c, unread: 0 } : c)));
+  };
+
+  const handleBlock = async () => {
+    const other = otherMember(selectedChat);
+    if (!other || !window.confirm(`Block ${other.name}? You won't be able to message each other.`)) return;
+    try {
+      await blockUser(other._id);
+      alert('User blocked.');
+      closeChat();
+    } catch {
+      alert('Could not block user.');
+    }
+  };
+
+  const handleAttach = (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedChat) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      socketRef.current?.emit('send_message', { chatId: selectedChat._id, sender: userId, media: reader.result, text: '' });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
   };
 
   const closeChat = () => {
@@ -148,10 +174,12 @@ function Dashboard() {
   const stats = useMemo(() => {
     if (!analytics) return [];
     return [
-      { title: 'Revenue (as seller)', value: `₹${(analytics.revenue || 0).toLocaleString('en-IN')}`, icon: TrendingUp },
+      { title: 'Revenue (seller)', value: `₹${(analytics.revenue || 0).toLocaleString('en-IN')}`, icon: TrendingUp },
       { title: 'Active Listings', value: analytics.activeListings ?? 0, icon: ArrowUpRight },
+      { title: 'Tons Sold', value: analytics.tonsSold ?? 0, icon: Package },
       { title: 'Active Orders', value: analytics.activeOrders ?? 0, icon: ArrowDownRight },
-      { title: 'Total Spent (as buyer)', value: `₹${(analytics.spent || 0).toLocaleString('en-IN')}`, icon: Users },
+      { title: 'Conversion Rate', value: `${analytics.conversionRate ?? 0}%`, icon: TrendingUp },
+      { title: 'Savings (buyer)', value: `₹${(analytics.savings || 0).toLocaleString('en-IN')}`, icon: Users },
     ];
   }, [analytics]);
 
@@ -171,9 +199,14 @@ function Dashboard() {
           <Plus className="h-5 w-5" /> Add Product
         </Link>
 
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2 mb-2">
           <Link to="/browse" className="flex-1 text-center text-sm border rounded-lg py-1.5 text-gray-600 hover:bg-gray-50">Browse</Link>
-          <Link to="/my-listings" className="flex-1 text-center text-sm border rounded-lg py-1.5 text-gray-600 hover:bg-gray-50">My Listings</Link>
+          <Link to="/my-listings" className="flex-1 text-center text-sm border rounded-lg py-1.5 text-gray-600 hover:bg-gray-50">Listings</Link>
+        </div>
+        <div className="flex gap-2 mb-4">
+          <Link to="/offers" className="flex-1 text-center text-sm border rounded-lg py-1.5 text-gray-600 hover:bg-gray-50">Offers</Link>
+          <Link to="/orders" className="flex-1 text-center text-sm border rounded-lg py-1.5 text-gray-600 hover:bg-gray-50">Orders</Link>
+          <Link to="/transactions" className="flex-1 text-center text-sm border rounded-lg py-1.5 text-gray-600 hover:bg-gray-50">Txns</Link>
         </div>
 
         <div className="relative mb-6">
@@ -203,13 +236,16 @@ function Dashboard() {
                   selectedChat?._id === chat._id ? 'bg-green-50 text-green-600' : 'hover:bg-gray-50'
                 }`}
               >
-                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center shrink-0">
                   {name.charAt(0).toUpperCase()}
                 </div>
-                <div>
-                  <div className="font-medium">{name}</div>
-                  <div className="text-xs text-gray-500">{contact?.email || ''}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium truncate">{name}</div>
+                  <div className="text-xs text-gray-500 truncate">{chat.lastMessage?.text || contact?.email || 'No messages yet'}</div>
                 </div>
+                {chat.unread > 0 && (
+                  <span className="bg-green-600 text-white text-[10px] rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center">{chat.unread}</span>
+                )}
               </button>
             );
           })}
@@ -238,9 +274,14 @@ function Dashboard() {
                     <p className="text-sm text-gray-500">{otherMember(selectedChat)?.email || ''}</p>
                   </div>
                 </div>
-                <button onClick={closeChat} className="p-2 hover:bg-gray-100 rounded-full">
-                  <X className="h-5 w-5 text-gray-500" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button onClick={handleBlock} className="p-2 hover:bg-gray-100 rounded-full text-gray-500 hover:text-red-500" title="Block user">
+                    <Ban className="h-5 w-5" />
+                  </button>
+                  <button onClick={closeChat} className="p-2 hover:bg-gray-100 rounded-full">
+                    <X className="h-5 w-5 text-gray-500" />
+                  </button>
+                </div>
               </div>
 
               <div className="flex-1 overflow-auto p-4 space-y-4">
@@ -251,7 +292,10 @@ function Dashboard() {
                   return (
                     <div key={msg._id || index} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
                       <div className={`max-w-xs ${mine ? 'order-2' : 'order-1'}`}>
-                        <div className={`p-3 rounded-lg ${mine ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-800'}`}>{msg.text}</div>
+                        <div className={`p-3 rounded-lg ${mine ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-800'}`}>
+                          {msg.media && <img src={msg.media} alt="attachment" className="rounded mb-1 max-h-40 object-cover" />}
+                          {msg.text}
+                        </div>
                         <div className={`text-xs text-gray-500 mt-1 ${mine ? 'text-right' : 'text-left'}`}>{time}</div>
                       </div>
                     </div>
@@ -261,6 +305,10 @@ function Dashboard() {
 
               <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-200">
                 <div className="flex gap-2">
+                  <label className="p-2 text-gray-500 hover:text-green-600 cursor-pointer" title="Attach image">
+                    <Paperclip className="h-5 w-5" />
+                    <input type="file" className="sr-only" accept="image/*" onChange={handleAttach} />
+                  </label>
                   <input
                     type="text"
                     value={message}
@@ -305,7 +353,7 @@ function Dashboard() {
           </div>
         ) : (
           <div className="flex-1 p-8 bg-white overflow-auto">
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
               {stats.map((s) => <StatCard key={s.title} title={s.title} value={s.value} icon={s.icon} />)}
             </div>
             {!analytics && <p className="text-gray-400 mt-6">Loading your stats…</p>}

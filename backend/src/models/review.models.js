@@ -14,6 +14,9 @@ const reviewSchema = new mongoose.Schema(
             createdAt: { type: Date },
         },
         helpful: { type: Number, default: 0 },
+        helpfulVoters: [{ type: mongoose.Schema.Types.ObjectId, ref: "user" }],
+        hidden: { type: Boolean, default: false },
+        reported: { type: Boolean, default: false },
     },
     { timestamps: true }
 );

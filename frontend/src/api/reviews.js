@@ -10,3 +10,5 @@ export const getListingReviews = (listingId) =>
 
 export const respondReview = (id, text) =>
   client.put(`/api/reviews/${id}/respond`, { text });
+
+export const toggleHelpful = (id) => client.post(`/api/reviews/${id}/helpful`);

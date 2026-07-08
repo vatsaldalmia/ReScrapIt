@@ -3,6 +3,7 @@ import axios from "axios";
 import {
     addScrap, deleteScrap, updateScrap, searchScrap,
     getScraps, getScrapById, getMyListings, getSellerListings,
+    getFeatured, getTrending,
 } from "../controllers/scrap.controllers.js";
 import { authMiddleware } from "../middlewares/auth.middlewares.js";
 
@@ -10,6 +11,10 @@ const router = express.Router();
 
 // Browse all active listings (public, paginated + filtered)
 router.get("/", getScraps);
+
+// Featured & trending (public) — must precede "/:id"
+router.get("/featured", getFeatured);
+router.get("/trending", getTrending);
 
 // Create a listing
 router.post("/add", authMiddleware, addScrap);

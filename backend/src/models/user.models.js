@@ -44,6 +44,15 @@ const userSchema = new mongoose.Schema(
         bio: { type: String, default: "" },
         isVerified: { type: Boolean, default: false },
         banned: { type: Boolean, default: false },
+        emailVerified: { type: Boolean, default: false },
+        phoneVerified: { type: Boolean, default: false },
+        emailVerifyToken: { type: String },
+        emailVerifyExpires: { type: Date },
+        resetToken: { type: String },
+        resetExpires: { type: Date },
+        otpCode: { type: String },
+        otpExpires: { type: Date },
+        blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: "user" }],
         kycDocuments: [
             {
                 type: {

@@ -34,6 +34,11 @@ const orderSchema = new mongoose.Schema(
         status: { type: String, enum: ORDER_STATUSES, default: "quote_accepted", index: true },
         offeredPrice: { type: Number },
         finalPrice: { type: Number, required: true, min: 0 },
+        platformFee: { type: Number, default: 0 },
+        escrowStatus: { type: String, enum: ["none", "held", "released", "refunded"], default: "none" },
+        actualWeight: { type: Number },
+        signature: { type: String },
+        refundId: { type: String },
         shippingAddress: {
             city: { type: String, default: "" },
             state: { type: String, default: "" },

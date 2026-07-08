@@ -4,11 +4,13 @@ A B2B marketplace connecting businesses that sell industrial waste/scrap with
 businesses that can use it as raw material. See `MASTER_PROMPT.md` (project brief)
 for the full product vision and roadmap.
 
-This repository implements **Phases 0–3** of the roadmap: foundation fixes, the
-core marketplace (listings, browse, seller storefronts), orders & trust (offers,
-order lifecycle, reviews & ratings), and B2B polish (roles, KYC/company profiles,
-in-app notifications, disputes, an admin panel, and real analytics) — a working
-end-to-end B2B platform.
+This repository implements the **complete roadmap (Phases 0–4)**: foundation
+fixes, the core marketplace, orders & trust, B2B polish, and the full feature
+set — payments/escrow/refunds, invoices, KYC & verification (email/OTP/password
+reset), cart/wishlist, saved searches, featured/trending, reviews with photos
+and moderation, reports, and a full admin panel. External-only services
+(Razorpay, SMTP email, SMS) have real integration code with safe local
+fallbacks, so every flow works end-to-end without credentials.
 
 ## Monorepo layout
 
@@ -43,6 +45,10 @@ Backend environment variables (`backend/.env`):
 | `JWT_SECRET_KEY` | yes | Secret used to sign JWTs |
 | `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` | no | If set, listing images are uploaded to Cloudinary; otherwise base64 is stored (dev fallback) |
 | `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` | no | If set, payments use Razorpay; otherwise the payment step is simulated (dev fallback) |
+| `PLATFORM_FEE_PERCENT` | no | Commission % taken from each paid order (default 2) |
+| `SMTP_*` | no | SMTP credentials for transactional email; without them emails are logged |
+| `SMS_PROVIDER` / `SMS_API_KEY` | no | SMS provider for phone OTP; without them the OTP is logged/returned in dev |
+| `FRONTEND_URL` | no | Public frontend URL used in email links |
 | `ADMIN_EMAILS` | no | Comma-separated admin emails (bootstraps platform admins) |
 | `SEMANTIC_SEARCH_URL` | no | Base URL of the optional external semantic-search service |
 

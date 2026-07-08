@@ -10,3 +10,10 @@ export const getMessages = (chatId) =>
 
 export const sendMessage = (chatId, text) =>
   client.post('/api/message/send', { chatId, text });
+
+export const sendMedia = (chatId, media, text) =>
+  client.post('/api/message/send', { chatId, media, text });
+
+export const markSeen = (chatId) => client.put(`/api/message/seen/${chatId}`);
+
+export const blockUser = (userId) => client.post('/api/chat/block', { userId });

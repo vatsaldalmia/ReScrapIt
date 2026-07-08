@@ -18,3 +18,7 @@ export const getMyListings = () => client.get('/api/scrap/my-listings');
 
 export const getSellerListings = (sellerId) =>
   client.get(`/api/scrap/seller/${sellerId}`);
+
+export const getFeatured = () => client.get('/api/scrap/featured');
+
+export const getTrending = () => client.get('/api/scrap/trending');

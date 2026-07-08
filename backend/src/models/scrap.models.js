@@ -61,6 +61,17 @@ const scrapSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.Mixed,
             default: {},
         },
+        featured: {
+            type: Boolean,
+            default: false,
+            index: true,
+        },
+        moderationStatus: {
+            type: String,
+            enum: ["approved", "pending", "rejected"],
+            default: "approved",
+            index: true,
+        },
         seller: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "user",

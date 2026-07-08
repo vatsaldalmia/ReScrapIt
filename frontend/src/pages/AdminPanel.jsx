@@ -20,6 +20,7 @@ export default function AdminPanel() {
   const [listings, setListings] = useState([]);
   const [orders, setOrders] = useState([]);
   const [disputes, setDisputes] = useState([]);
+  const [reports, setReports] = useState([]);
 
   const loadOverview = async () => {
     const { data } = await admin.getAnalytics();
@@ -29,9 +30,10 @@ export default function AdminPanel() {
   const loadListings = async () => setListings((await admin.getListings()).data.listings);
   const loadOrders = async () => setOrders((await admin.getOrders()).data.orders);
   const loadDisputes = async () => setDisputes((await admin.getDisputes()).data.disputes);
+  const loadReports = async () => setReports((await admin.getReports()).data.reports);
 
   useEffect(() => {
-    const loaders = { overview: loadOverview, users: loadUsers, listings: loadListings, orders: loadOrders, disputes: loadDisputes };
+    const loaders = { overview: loadOverview, users: loadUsers, listings: loadListings, orders: loadOrders, disputes: loadDisputes, reports: loadReports };
     loaders[tab]?.().catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
@@ -43,9 +45,11 @@ export default function AdminPanel() {
     await admin.resolveDispute(id, status, notes);
     loadDisputes();
   };
+  const moderate = async (id, payload) => { await admin.moderateListing(id, payload); loadListings(); };
+  const resolveRep = async (id, action) => { await admin.resolveReport(id, undefined, action); loadReports(); };
 
   const tabs = [
-    ['overview', 'Overview'], ['users', 'Users'], ['listings', 'Listings'], ['orders', 'Orders'], ['disputes', 'Disputes'],
+    ['overview', 'Overview'], ['users', 'Users'], ['listings', 'Listings'], ['orders', 'Orders'], ['disputes', 'Disputes'], ['reports', 'Reports'],
   ];
 
   return (
@@ -99,7 +103,11 @@ export default function AdminPanel() {
             {listings.map((l) => (
               <div key={l._id} className="p-3 flex items-center gap-3">
                 <div className="flex-1"><span className="font-medium">{l.name}</span> <span className="text-sm text-gray-500">by {l.seller?.name}</span></div>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">{l.status}</span>
+                {l.featured && <span className="text-xs bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full">featured</span>}
+                <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">{l.moderationStatus}</span>
+                <button onClick={() => moderate(l._id, { featured: !l.featured })} className="text-xs border px-2 py-1 rounded-lg hover:bg-gray-50">{l.featured ? 'Unfeature' : 'Feature'}</button>
+                <button onClick={() => moderate(l._id, { moderationStatus: 'approved' })} className="text-xs text-green-700 border border-green-200 px-2 py-1 rounded-lg hover:bg-green-50">Approve</button>
+                <button onClick={() => moderate(l._id, { moderationStatus: 'rejected' })} className="text-xs text-red-600 border border-red-200 px-2 py-1 rounded-lg hover:bg-red-50">Reject</button>
               </div>
             ))}
           </div>
@@ -132,6 +140,29 @@ export default function AdminPanel() {
                     <button onClick={() => resolve(d._id, 'resolved_buyer')} className="text-sm bg-green-600 text-white px-3 py-1 rounded-lg hover:bg-green-700">Resolve for buyer</button>
                     <button onClick={() => resolve(d._id, 'resolved_seller')} className="text-sm bg-green-600 text-white px-3 py-1 rounded-lg hover:bg-green-700">Resolve for seller</button>
                     <button onClick={() => resolve(d._id, 'under_review')} className="text-sm border px-3 py-1 rounded-lg hover:bg-gray-50">Mark under review</button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+        {tab === 'reports' && (
+          <div className="space-y-3">
+            {reports.length === 0 && <p className="text-gray-500">No reports.</p>}
+            {reports.map((rp) => (
+              <div key={rp._id} className="bg-white p-4 rounded-lg border">
+                <div className="flex items-center justify-between">
+                  <div className="font-medium capitalize">{rp.targetType} report: {rp.reason}</div>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">{rp.status}</span>
+                </div>
+                <div className="text-sm text-gray-500 mt-1">By {rp.reporter?.name} · {new Date(rp.createdAt).toLocaleDateString('en-IN')}</div>
+                {rp.description && <p className="text-sm text-gray-600 mt-1">{rp.description}</p>}
+                {rp.status === 'open' && (
+                  <div className="flex gap-2 mt-3 flex-wrap">
+                    {rp.targetType === 'review' && <button onClick={() => resolveRep(rp._id, 'hide_review')} className="text-sm bg-green-600 text-white px-3 py-1 rounded-lg hover:bg-green-700">Hide review</button>}
+                    {rp.targetType === 'listing' && <button onClick={() => resolveRep(rp._id, 'reject_listing')} className="text-sm bg-green-600 text-white px-3 py-1 rounded-lg hover:bg-green-700">Reject listing</button>}
+                    {rp.targetType === 'user' && <button onClick={() => resolveRep(rp._id, 'ban_user')} className="text-sm bg-red-600 text-white px-3 py-1 rounded-lg hover:bg-red-700">Ban user</button>}
+                    <button onClick={async () => { await admin.resolveReport(rp._id, 'dismissed'); loadReports(); }} className="text-sm border px-3 py-1 rounded-lg hover:bg-gray-50">Dismiss</button>
                   </div>
                 )}
               </div>
