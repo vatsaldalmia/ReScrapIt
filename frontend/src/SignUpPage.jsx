@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { RecycleIcon, ArrowLeft } from 'lucide-react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { signup as signupRequest } from './api/auth';
+import { useAuth } from './context/AuthContext';
 
 function InputField({
   label,
@@ -44,6 +45,7 @@ function InputField({
 
 function SignUpPage() {
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const [formData, setFormData] = useState({
     username: '',
@@ -88,7 +90,7 @@ const handleSubmit = async (e) => {
   if (!validateForm()) return;
 
   try {
-    const response = await axios.post("http://localhost:3000/auth/signup", {
+    const response = await signupRequest({
       name: formData.username,
       email: formData.email,
       password: formData.password,
@@ -97,10 +99,11 @@ const handleSubmit = async (e) => {
       pan: formData.panCard,
     });
 
-    if (response.status === 201 || response.data.success) {
+    // Backend returns { token, user } — auto-login the new user.
+    if (response.data.token) {
+      login(response.data.token, response.data.user);
       navigate("/dashboard");
-    }
-    else {
+    } else {
       throw new Error(response.data.message || "Signup failed");
     }
   } catch (error) {

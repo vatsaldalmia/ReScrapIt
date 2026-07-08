@@ -54,7 +54,9 @@ export const searchScrap = async (req, res) => {
                 { name: { $regex: query, $options: "i" } }, 
                 { description: { $regex: query, $options: "i" } }
             ]
-        });
+        })
+            .populate("seller", "name email")
+            .sort({ createdAt: -1 });
 
         res.status(200).json({ scraps });
     } catch (error) {

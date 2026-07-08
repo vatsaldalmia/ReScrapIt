@@ -2,10 +2,23 @@ import User from "../models/user.models.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
+const signToken = (userId) =>
+    jwt.sign({ id: userId }, process.env.JWT_SECRET_KEY, { expiresIn: "24h" });
+
+const sanitizeUser = (user) => {
+    const obj = user.toObject ? user.toObject() : { ...user };
+    delete obj.password;
+    return obj;
+};
+
 // User Signup
 export const registerUser = async (req, res) => {
     try {
         const { name, email, password, phoneNumber, address, pan } = req.body;
+
+        if (!name || !email || !password || !phoneNumber || !address || !pan) {
+            return res.status(400).json({ message: "All fields are required" });
+        }
 
         let user = await User.findOne({ email });
         if (user) return res.status(400).json({ message: "User already exists" });
@@ -14,11 +27,13 @@ export const registerUser = async (req, res) => {
         user = new User({ name, email, password: hashedPassword, phoneNumber, address, pan });
 
         await user.save();
-        res.status(201).json({ message: "User registered successfully" });
+
+        const token = signToken(user._id);
+        res.status(201).json({ token, user: sanitizeUser(user) });
     } catch (error) {
-        res.status(500).json({ message: "Server error", error });
+        res.status(500).json({ message: "Server error", error: error.message });
         console.log(error);
-        
+
     }
 };
 
@@ -31,13 +46,13 @@ export const loginUser = async (req, res) => {
         if (!user) return res.status(400).json({ message: "Invalid email" });
 
         const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) return res.status(400).json({ message: "Invalid prassword" });
+        if (!isMatch) return res.status(400).json({ message: "Invalid password" });
 
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET_KEY, { expiresIn: "24h" });
+        const token = signToken(user._id);
 
-        res.json({ token, userId: user._id });
+        res.json({ token, user: sanitizeUser(user) });
     } catch (error) {
-        res.status(500).json({ message: "Server error", error });
+        res.status(500).json({ message: "Server error", error: error.message });
         console.log(error);
     }
 };
@@ -45,9 +60,9 @@ export const loginUser = async (req, res) => {
 // Get User Profile (Protected)
 export const getProfile = async (req, res) => {
     try {
-        const user = await User.findById(req.user.id).select("-password");
-        res.json(user);
+        // authMiddleware already attaches the user document (minus password)
+        res.json(req.user);
     } catch (error) {
-        res.status(500).json({ message: "Server error", error });
+        res.status(500).json({ message: "Server error", error: error.message });
     }
 };

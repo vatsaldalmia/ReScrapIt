@@ -22,9 +22,10 @@ const scrapSchema = new mongoose.Schema(
         },
         seller: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
+            ref: "user",
         }
-    }
+    },
+    { timestamps: true }
 )
 
 export default mongoose.model("Scrap", scrapSchema)
