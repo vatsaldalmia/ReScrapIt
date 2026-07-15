@@ -1,11 +1,9 @@
 # ReScrapIt
 
 A B2B marketplace connecting businesses that sell industrial waste/scrap with
-businesses that can use it as raw material. See `MASTER_PROMPT.md` (project brief)
-for the full product vision and roadmap.
+businesses that can use it as raw material.
 
-This repository implements the **complete roadmap (Phases 0–4)**: foundation
-fixes, the core marketplace, orders & trust, B2B polish, and the full feature
+This repository implements the:the core marketplace, orders & trust, B2B, and the full feature
 set — payments/escrow/refunds, invoices, KYC & verification (email/OTP/password
 reset), cart/wishlist, saved searches, featured/trending, reviews with photos
 and moderation, reports, and a full admin panel. External-only services
@@ -63,7 +61,6 @@ npm run dev
 
 The frontend reads the API base URL from `import.meta.env.VITE_API_URL`.
 
-## What works (Phase 0 + 1 + 2 + 3)
 
 - **Auth & roles:** signup auto-login; JWT login; buyer/seller/dual/admin roles;
   banned accounts are blocked at the middleware.
